@@ -1990,38 +1990,19 @@ Object.entries(INDICATORS_CONFIG).forEach(([key, cfg]) => {
       return;
     }
 
-   const { error: insertError } = await supabaseClient
-  .from("respostas")
-  .insert([
-    {
-      cpf: cpf,
-      code: testCode,
-      submitted_at: submittedAt,
-      results: resultsPayload,          // array puro pergunta/resposta
-      results_meta: resultsMetaPayload  // bruto + pontuação
-    }
-  ]);
+    const { error: submitError } = await supabaseClient.rpc("submit_public_patient_form_response", {
+      p_token: token,
+      p_form_code: testCode,
+      p_form_name: "Escala de responsividade social - Idade escolar - Professor",
+      p_results: resultsPayload,
+      p_results_meta: resultsMetaPayload
+    });
 
-   if (insertError) {
-  console.error("ERRO INSERT respostas:", insertError);
-  throw new Error(
-    `Erro ao salvar respostas: ${insertError.message || ""} ${insertError.details || ""} ${insertError.hint || ""}`.trim()
-  );
-}
-
-    // 3) Atualiza tests_feitos no patients (JSONB)
-    const nextTestsFeitos = buildUpdatedTestsFeitos(patient.tests_feitos, testCode, submittedAt);
-
-    const { error: updateError } = await supabaseClient
-      .from("patients")
-      .update({
-        tests_feitos: nextTestsFeitos
-      })
-      .eq("cpf", cpf);
-
-    if (updateError) {
-      console.error(updateError);
-      throw new Error("Resposta salva, mas falhou ao marcar teste como feito.");
+    if (submitError) {
+      console.error("ERRO submit_public_patient_form_response:", submitError);
+      throw new Error(
+        `Erro ao salvar respostas: ${submitError.message || ""} ${submitError.details || ""} ${submitError.hint || ""}`.trim()
+      );
     }
 
     // 4) Sucesso
